@@ -1,0 +1,1190 @@
+<!doctype html>
+<html lang="en" data-season="fall">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__PARK_TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* ---------- Theme ---------- */
+:root{
+  --bg:#f7f4ee;--surface:#fffdf9;--ink:#1d2620;--muted:#5d675f;--line:#e4dfd3;
+  --accent:#c0561d;--accent2:#d99a2b;
+  --soft:color-mix(in srgb,var(--accent) 13%,var(--surface));
+  --accent-ink:var(--accent);
+  --radius:16px;--shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
+}
+[data-season="spring"]{--accent:#b8467a;--accent2:#4f9a5e}
+[data-season="summer"]{--accent:#2e7d4c;--accent2:#c9a227}
+[data-season="fall"]  {--accent:#c0561d;--accent2:#d99a2b}
+[data-season="winter"]{--accent:#3f6f9f;--accent2:#8aa6bf}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#121714;--surface:#1a211c;--ink:#e8ede8;--muted:#a2ada4;--line:#2b352e;
+    --accent-ink:color-mix(in srgb,var(--accent) 65%,white);--shadow:none}
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,sans-serif;transition:background .4s}
+h1,h2,h3{font-family:Fredoka,system-ui,sans-serif;line-height:1.12;margin:0 0 .45em;font-weight:600}
+h2{font-size:clamp(30px,4.4vw,46px);letter-spacing:-.01em}
+h3{font-size:20px}
+a{color:var(--accent-ink)}
+p{margin:0 0 1em}
+img{max-width:100%}
+.wrap{max-width:1160px;margin:0 auto;padding:0 20px}
+.muted{color:var(--muted)}.small{font-size:14px}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:10px}
+section{padding:88px 0}
+section.alt{background:var(--surface);border-block:1px solid var(--line)}
+.lead{font-size:19px;max-width:68ch}
+.grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+section.alt .card{background:var(--bg)}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--soft);color:var(--accent-ink);border:1px solid transparent;border-radius:999px;padding:6px 13px;font-size:13.5px;font-weight:600;cursor:default}
+button.chip{cursor:pointer;font-family:inherit}
+button.chip[aria-pressed="false"]{background:transparent;border-color:var(--line);color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;border:0;border-radius:12px;padding:12px 18px;font:600 15px Inter,sans-serif;text-decoration:none;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent-ink);border:1px solid var(--line)}
+.empty{padding:22px;border:1px dashed var(--line);border-radius:var(--radius);color:var(--muted)}
+
+/* ---------- Nav ---------- */
+nav.top{position:sticky;top:0;z-index:1000;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav.top .wrap{display:flex;align-items:center;gap:18px;height:60px}
+nav.top .brand{font-family:Fredoka,system-ui,sans-serif;font-weight:600;font-size:18px;white-space:nowrap}
+nav.top .links{display:flex;gap:18px;overflow-x:auto;flex:1;scrollbar-width:none}
+nav.top .links a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap}
+nav.top .links a:hover{color:var(--ink)}
+.seasons{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seasons button{border:0;background:transparent;color:var(--muted);font:600 13px Inter,sans-serif;padding:6px 11px;border-radius:999px;cursor:pointer}
+.seasons button[aria-pressed="true"]{background:var(--accent);color:#fff}
+@media (max-width:860px){nav.top .links{display:none}nav.top .wrap{justify-content:space-between}}
+@media (max-width:420px){.seasons button{padding:6px 8px;font-size:12px}nav.top .brand{font-size:16px}}
+
+/* ---------- Alerts ---------- */
+.alerts{background:color-mix(in srgb,#d4a017 18%,var(--bg));border-bottom:1px solid var(--line);font-size:14px}
+.alerts summary{cursor:pointer;padding:10px 0;font-weight:600;list-style:none}
+.alerts summary::-webkit-details-marker{display:none}
+.alerts ul{margin:0;padding:0 0 14px;list-style:none;display:grid;gap:10px}
+.alerts li{background:var(--surface);border-radius:10px;padding:10px 14px;border:1px solid var(--line)}
+.alerts .cat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-ink)}
+
+/* ---------- Hero ---------- */
+.hero{position:relative;min-height:92vh;display:flex;align-items:flex-end;color:#fff;overflow:hidden;background:#243128}
+.hero .bg{position:absolute;inset:-6% 0 0;background:center/cover no-repeat;transform:translateY(var(--parallax,0));will-change:transform}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.1) 25%,rgba(0,0,0,.78)),linear-gradient(90deg,color-mix(in srgb,var(--accent) 30%,transparent),transparent 60%);transition:background .6s}
+.hero .wrap{position:relative;z-index:1;width:100%;padding-bottom:64px}
+.hero .eyebrow{font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;opacity:.92}
+.hero h1{font-size:clamp(46px,8.4vw,108px);font-weight:800;letter-spacing:-.02em;margin:.12em 0 .2em;max-width:12ch}
+.hero .tag{max-width:58ch;font-size:clamp(17px,2vw,20px);opacity:.95}
+.stats{display:flex;flex-wrap:wrap;gap:12px 40px;margin-top:34px}
+.stat b{display:block;font-family:Fredoka,system-ui,sans-serif;font-size:34px;font-weight:600;line-height:1}
+.stat span{font-size:13px;opacity:.85}
+.credit{position:absolute;right:14px;bottom:10px;z-index:1;font-size:11px;opacity:.7}
+
+/* ---------- Season banner ---------- */
+.season-note{display:flex;gap:18px;align-items:flex-start;padding:24px;border-radius:var(--radius);background:var(--soft);margin-top:32px}
+.season-note .icon{font-size:30px;line-height:1}
+
+/* ---------- Conditions ---------- */
+.forecast{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(150px,1fr);gap:12px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x mandatory}
+.fc{scroll-snap-align:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.fc img{width:44px;height:44px;border-radius:8px}
+.fc .t{font-family:Fredoka,system-ui,sans-serif;font-size:28px}
+.fc .n{font-weight:600;font-size:14px}
+.fc .d{font-size:13px;color:var(--muted)}
+.live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#2fa84f;margin-right:6px;box-shadow:0 0 0 4px color-mix(in srgb,#2fa84f 25%,transparent)}
+.cams{margin-top:40px}
+.cam{overflow:hidden;padding:0}
+.cam .ph{aspect-ratio:16/9;background:var(--soft) center/cover no-repeat;display:grid;place-items:center;color:var(--accent-ink);font-weight:600}
+.cam .body{padding:16px}
+
+/* ---------- Skyline Drive journey ---------- */
+.drive{display:grid;grid-template-columns:260px 1fr;gap:48px;margin-top:40px}
+.road{position:sticky;top:90px;height:calc(100vh - 130px);max-height:760px}
+.road svg{width:100%;height:100%;overflow:visible}
+.road .asphalt{fill:none;stroke:color-mix(in srgb,var(--ink) 80%,transparent);stroke-width:16;stroke-linecap:round}
+.road .dash{fill:none;stroke:var(--accent2);stroke-width:2;stroke-dasharray:8 10}
+.road .done{fill:none;stroke:var(--accent);stroke-width:16;stroke-linecap:round;opacity:.9}
+.road .ticks text{font:600 11px Inter,sans-serif;fill:var(--muted)}
+.road .stopdot{fill:var(--surface);stroke:var(--accent);stroke-width:3}
+.road .stopdot.on{fill:var(--accent)}
+.road .car{fill:var(--accent);stroke:#fff;stroke-width:3;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))}
+.readout{position:absolute;left:0;top:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;box-shadow:var(--shadow)}
+.readout b{font-family:Fredoka,system-ui,sans-serif;font-size:24px;display:block;line-height:1.1}
+.stops{list-style:none;margin:0;padding:0;display:grid;gap:22px}
+.stop{padding:24px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);transition:transform .35s,border-color .35s,box-shadow .35s;opacity:.72}
+.stop.active{opacity:1;border-color:var(--accent);transform:translateX(6px);box-shadow:var(--shadow)}
+.stop .mp{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink)}
+.stop .type{float:right;font-size:12px;color:var(--muted)}
+.stop img{width:100%;aspect-ratio:21/9;object-fit:cover;border-radius:10px;margin:10px 0}
+@media (max-width:760px){.drive{grid-template-columns:64px 1fr;gap:16px}.readout{display:none}.road .ticks text{display:none}}
+
+/* ---------- Map ---------- */
+#map{height:620px;border-radius:var(--radius);border:1px solid var(--line);margin-top:28px;z-index:0}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.pin{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:grid;place-items:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.pin span{transform:rotate(45deg);font-size:13px}
+.leaflet-popup-content{font:14px/1.5 Inter,sans-serif}
+.leaflet-popup-content b{font-family:Fredoka,system-ui,sans-serif;font-size:16px}
+@media (max-width:600px){#map{height:460px}}
+
+/* ---------- 3D ---------- */
+.terrain-box{position:relative;height:620px;border-radius:var(--radius);overflow:hidden;margin-top:28px;background:radial-gradient(ellipse at 50% 30%,color-mix(in srgb,var(--accent2) 22%,#0e1512),#0b100d 70%);border:1px solid var(--line)}
+.terrain-box canvas{display:block;width:100%;height:100%;cursor:grab}
+.terrain-msg{position:absolute;inset:0;display:grid;place-items:center;color:#dfe7e0;text-align:center;padding:20px;pointer-events:none}
+.terrain-tip{position:absolute;left:16px;bottom:14px;color:#dfe7e0;font-size:13px;opacity:.85;pointer-events:none}
+.terrain-label{position:absolute;pointer-events:none;background:rgba(10,14,12,.8);color:#fff;font-size:13px;padding:6px 10px;border-radius:8px;transform:translate(-50%,-130%);white-space:nowrap;display:none}
+@media (max-width:600px){.terrain-box{height:440px}}
+
+/* ---------- Planner ---------- */
+.planner{display:grid;grid-template-columns:minmax(260px,360px) 1fr;gap:32px;margin-top:32px;align-items:start}
+.planner fieldset{border:0;padding:0;margin:0 0 22px}
+.planner legend{font-weight:700;font-size:14px;margin-bottom:10px}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.itin{list-style:none;margin:0;padding:0;position:relative}
+.itin li{position:relative;padding:0 0 22px 38px}
+.itin li::before{content:"";position:absolute;left:11px;top:26px;bottom:0;border-left:2px dashed var(--line)}
+.itin li:last-child::before{display:none}
+.itin .dot{position:absolute;left:0;top:2px;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+.itin .time{font-size:12px;font-weight:700;color:var(--accent-ink);letter-spacing:.06em;text-transform:uppercase}
+.itin .drivebit{font-size:12.5px;color:var(--muted);padding-left:38px;margin:-14px 0 14px}
+@media (max-width:860px){.planner{grid-template-columns:1fr}}
+
+/* ---------- Things to do / cards with images ---------- */
+.tcard{padding:0;overflow:hidden;display:flex;flex-direction:column}
+.tcard .ph{aspect-ratio:3/2;background:var(--soft) center/cover no-repeat}
+.tcard .body{padding:18px;display:flex;flex-direction:column;gap:8px;flex:1}
+.tcard .meta{display:flex;flex-wrap:wrap;gap:6px}
+.tcard .meta .chip{font-size:12px;padding:3px 9px}
+.tcard a.more{margin-top:auto;font-weight:600;font-size:14px}
+.filterbar{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0}
+
+/* ---------- Plan ---------- */
+.price{font-family:Fredoka,system-ui,sans-serif;font-size:32px;color:var(--accent-ink);line-height:1}
+table.hours{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+table.hours td{padding:5px 0;border-bottom:1px dashed var(--line)}
+table.hours td:last-child{text-align:right;color:var(--muted)}
+.kv{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--muted);margin:6px 0 12px}
+.kv b{color:var(--ink)}
+
+/* ---------- Events & gallery ---------- */
+.event{display:grid;grid-template-columns:70px 1fr;gap:16px;align-items:start}
+.cal{background:var(--accent);color:#fff;border-radius:12px;text-align:center;padding:8px 0}
+.cal b{display:block;font-family:Fredoka,system-ui,sans-serif;font-size:28px;line-height:1}
+.cal span{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em}
+.gallery{columns:3 260px;column-gap:14px}
+.gallery figure{break-inside:avoid;margin:0 0 14px;border-radius:14px;overflow:hidden;background:var(--surface);border:1px solid var(--line)}
+.gallery img{display:block;width:100%}
+.gallery figcaption{padding:10px 12px;font-size:13px;color:var(--muted)}
+
+footer{padding:48px 0;font-size:13px;color:var(--muted);border-top:1px solid var(--line)}
+footer a{color:inherit}
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .7s,transform .7s}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}.reveal{opacity:1;transform:none}}
+/* ---------- Adventure ---------- */
+.adv{position:relative;min-height:100vh;padding:28px 0 56px;overflow:hidden;overflow:clip;background:#1b241e;color:#fff}
+.adv-bg{position:absolute;inset:-40px;background:center/cover no-repeat;filter:blur(22px) brightness(.45) saturate(1.2);transform:scale(1.08);transition:background-image .8s}
+.adv::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 28%,transparent),transparent 40%);pointer-events:none}
+.adv-wrap{position:relative;z-index:1}
+.adv-top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.adv-kicker{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+.adv-park{font-family:Fredoka,system-ui,sans-serif;font-size:clamp(24px,3vw,32px);font-weight:600}
+.badges{display:flex;gap:8px;flex-wrap:wrap}
+.badge{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;border:2px dashed rgba(255,255,255,.35);color:rgba(255,255,255,.35)}
+.badge svg{width:22px;height:22px}
+.badge.on{border:2px solid #fff;background:var(--accent2);color:#1b1b1b;box-shadow:0 0 0 4px color-mix(in srgb,var(--accent2) 35%,transparent)}
+.badge.pop{animation:pop .7s}
+@keyframes pop{0%{transform:scale(.4)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+.adv-grid{display:grid;grid-template-columns:230px 1fr;gap:36px;align-items:start}
+.adv-road{position:relative;top:auto;height:620px;max-height:none}
+.adv-road .asphalt{stroke:rgba(255,255,255,.22)}
+.adv-road .ticks text{fill:rgba(255,255,255,.6)}
+.adv-road .stopdot{fill:#1b241e}
+.thumb{position:absolute;display:flex;align-items:center;gap:8px;transform:translateY(-50%);transition:top .5s;pointer-events:none}
+.thumb i{width:46px;height:46px;border-radius:50%;background:var(--accent) center/cover;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.4);flex:none}
+.thumb span{font-size:11px;line-height:1.25;max-width:96px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.thumb span b{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+.scene{background:var(--surface);color:var(--ink);border-radius:24px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35);animation:rise .5s ease}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.scene .photo{position:relative;aspect-ratio:16/8;background:var(--soft) center/cover no-repeat}
+.scene .photo .mile{position:absolute;left:18px;top:18px;background:rgba(0,0,0,.62);color:#fff;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;letter-spacing:.06em}
+.scene .photo .step{position:absolute;right:18px;top:18px;background:rgba(0,0,0,.62);color:#fff;border-radius:999px;padding:7px 14px;font-size:13px}
+.scene .body{padding:26px clamp(20px,4vw,40px) 32px}
+.scene h2{font-size:clamp(28px,4vw,42px);margin-bottom:.35em}
+.scene .story{font-size:clamp(17px,1.8vw,19px);line-height:1.7}
+.scene .story p{margin:0 0 .8em}
+.scene .seasonline{background:var(--soft);border-radius:12px;padding:10px 14px;font-size:16px;margin:4px 0 14px}
+.fact{display:flex;gap:14px;align-items:flex-start;background:color-mix(in srgb,var(--accent2) 16%,var(--surface));border:2px solid color-mix(in srgb,var(--accent2) 45%,transparent);border-radius:18px;padding:14px 16px;margin:18px 0 6px;font-size:15.5px}
+.fact .who{flex:none;width:44px;height:44px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:#fff}
+.fact .who svg{width:28px;height:28px}
+.fact b{display:block;font-family:Fredoka,system-ui,sans-serif;font-size:15px;color:var(--accent-ink)}
+.choices{display:grid;gap:12px;margin-top:22px}
+.choice{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;width:100%;background:var(--accent);color:#fff;border:0;border-radius:16px;padding:16px 20px;font:600 17px Fredoka,system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 60%,#000);transition:transform .15s,box-shadow .15s}
+.choice:hover{transform:translateY(-2px);box-shadow:0 6px 0 color-mix(in srgb,var(--accent) 60%,#000)}
+.choice:active{transform:translateY(3px);box-shadow:0 1px 0 color-mix(in srgb,var(--accent) 60%,#000)}
+.choice.alt2{background:var(--surface);color:var(--accent-ink);border:2px solid var(--accent);box-shadow:none}
+.choice .arrow{font-size:22px;line-height:1}
+.choice:focus-visible{outline:3px solid var(--accent2);outline-offset:3px}
+.season-pick{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:20px}
+.season-pick .choice{justify-content:center}
+.scene .extras{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.scene .extras button,.scene .extras a{background:none;border:0;color:var(--accent-ink);font:600 14px Inter,sans-serif;cursor:pointer;padding:4px 0;text-decoration:underline;text-underline-offset:3px}
+.ending-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin:18px 0}
+.ending-stats div{background:var(--soft);border-radius:14px;padding:12px 14px}
+.ending-stats b{display:block;font-family:Fredoka,system-ui,sans-serif;font-size:28px;color:var(--accent-ink);line-height:1.1}
+.ending-badges{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
+.ending-badges span{display:inline-flex;align-items:center;gap:6px;background:var(--soft);color:var(--accent-ink);border-radius:999px;padding:6px 12px;font-weight:600;font-size:14px}
+.ending-badges svg{width:16px;height:16px}
+.triplog-wrap{margin-top:28px}
+.triplog-h{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.8;margin-bottom:10px}
+.triplog{list-style:none;margin:0;padding:0 0 6px;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory}
+.triplog li{flex:none;width:150px;scroll-snap-align:start;background:rgba(255,255,255,.1);border-radius:14px;overflow:hidden;animation:rise .5s}
+.triplog li i{display:block;aspect-ratio:4/3;background:var(--accent) center/cover}
+.triplog li div{padding:8px 10px;font-size:12.5px;line-height:1.35}
+.triplog li b{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
+.adv-progress{display:none;margin-bottom:16px}
+.adv-progress .bar{height:10px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden}
+.adv-progress .bar span{display:block;height:100%;background:var(--accent2);border-radius:99px;transition:width .8s}
+.adv-progress .lbl{font-size:13px;margin-top:6px;opacity:.9}
+.toast{position:fixed;left:50%;bottom:24px;width:max-content;max-width:calc(100vw - 32px);transform:translate(-50%,160%);background:#fff;color:#1b241e;border-radius:18px;padding:12px 18px;display:flex;gap:12px;align-items:center;box-shadow:0 12px 40px rgba(0,0,0,.35);z-index:2000;transition:transform .45s cubic-bezier(.2,1.4,.4,1);font-weight:600}
+.toast.show{transform:translate(-50%,0)}
+.toast .badge{border-style:solid;width:40px;height:40px}
+@media (max-width:760px){.adv-grid{grid-template-columns:1fr}.adv-road{display:none}.adv-progress{display:block}.scene .photo{aspect-ratio:4/3}.season-pick{grid-template-columns:1fr 1fr}.badge{width:34px;height:34px}.badge svg{width:18px;height:18px}}
+</style>
+</head>
+<body>
+<script id="park-data" type="application/json">__PARK_DATA__</script>
+
+<nav class="top"><div class="wrap">
+  <span class="brand" id="brand"></span>
+  <div class="links">
+    <a href="#adventure">Adventure</a><a href="#conditions">Conditions</a><a href="#map-sec">Map</a><a href="#terrain">3D</a><a href="#planner">Trip planner</a><a href="#todo">Things to do</a><a href="#plan">Plan</a><a href="#events">Events</a>
+  </div>
+  <div class="seasons" role="group" aria-label="Season theme">
+    <button data-s="spring">Spring</button><button data-s="summer">Summer</button><button data-s="fall">Fall</button><button data-s="winter">Winter</button>
+  </div>
+</div></nav>
+
+<div id="alerts"></div>
+
+<main>
+<section id="adventure" class="adv">
+  <div class="adv-bg" id="adv-bg"></div>
+  <div class="wrap adv-wrap">
+    <div class="adv-top">
+      <div><div class="adv-kicker">Junior Explorer Adventure</div><div class="adv-park" id="adv-park"></div></div>
+      <div class="badges" id="badges" role="list" aria-label="Badges you can earn"></div>
+    </div>
+    <div class="adv-progress" id="adv-progress" aria-hidden="true"><div class="bar"><span></span></div><div class="lbl"></div></div>
+    <div class="adv-grid">
+      <div class="road adv-road" id="road" aria-hidden="true"></div>
+      <article class="scene" id="scene" aria-live="polite"></article>
+    </div>
+    <div class="triplog-wrap" id="triplog-wrap"><div class="triplog-h">Your trip log</div><ol class="triplog" id="triplog"></ol></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+</section>
+
+<section id="about"><div class="wrap">
+  <div class="kicker">Explorer&rsquo;s field guide</div>
+  <h2 id="about-title">Everything for a real visit</h2>
+  <div class="lead" id="about-text"></div>
+</div></section>
+
+<section id="conditions" class="alt"><div class="wrap">
+  <div class="kicker">Right now</div>
+  <h2>Conditions</h2>
+  <p class="muted" id="forecast-status"></p>
+  <div class="forecast" id="forecast"></div>
+  <div class="cams">
+    <h3>Park webcams</h3>
+    <div class="grid" id="webcams"></div>
+  </div>
+</div></section>
+
+
+<section id="map-sec" class="alt"><div class="wrap">
+  <div class="kicker">Explore</div>
+  <h2>Trails, overlooks &amp; everything in between</h2>
+  <p class="lead">Topographic map with park facilities from the National Park Service and trails, viewpoints and waterfalls from OpenStreetMap. Toggle layers in the corner.</p>
+  <div id="map" role="region" aria-label="Park map"></div>
+  <div class="legend" id="legend"></div>
+</div></section>
+
+<section id="terrain"><div class="wrap">
+  <div class="kicker">In three dimensions</div>
+  <h2>The Blue Ridge, up close</h2>
+  <p class="lead">Real elevation data for the whole park, stretched vertically so the ridges pop. Drag to orbit, scroll or pinch to zoom, and hover a pin to see what it is. Colors follow the season you pick up top.</p>
+  <div class="terrain-box" id="terrain-box">
+    <div class="terrain-msg" id="terrain-msg">Loading elevation data…</div>
+    <div class="terrain-label" id="terrain-label"></div>
+    <div class="terrain-tip">Elevation ×3 · Terrain Tiles (AWS Open Data)</div>
+  </div>
+</div></section>
+
+<section id="planner" class="alt"><div class="wrap">
+  <div class="kicker">Make a plan</div>
+  <h2>Build your day in Shenandoah</h2>
+  <p class="lead">Pick what you're into and how much time you have. The planner picks from the park's own suggested things to do and orders them along Skyline Drive.</p>
+  <div class="planner">
+    <form id="planner-form" onsubmit="return false">
+      <fieldset><legend>I'm into…</legend><div class="chips" id="pl-interests"></div></fieldset>
+      <fieldset><legend>Time I have</legend><div class="seg" id="pl-time"></div></fieldset>
+      <fieldset><legend>Coming in from</legend><div class="seg" id="pl-start"></div></fieldset>
+    </form>
+    <div class="card" id="pl-result"></div>
+  </div>
+</div></section>
+
+<section id="todo"><div class="wrap">
+  <div class="kicker">Ideas from the rangers</div>
+  <h2>Things to do</h2>
+  <div class="filterbar" id="todo-filters"></div>
+  <div class="grid" id="todo-grid"></div>
+  <h3 style="margin-top:48px">All activities</h3>
+  <div class="chips" id="activities"></div>
+</div></section>
+
+<section id="plan" class="alt"><div class="wrap">
+  <div class="kicker">Before you go</div>
+  <h2>Plan your visit</h2>
+  <div class="grid" id="fees"></div>
+  <h3 style="margin-top:48px">Visitor centers</h3>
+  <div class="grid" id="vcs"></div>
+  <h3 style="margin-top:48px">Camping</h3>
+  <div class="grid" id="camps"></div>
+  <h3 style="margin-top:48px">Hours &amp; getting there</h3>
+  <div class="grid" id="hours"></div>
+</div></section>
+
+<section id="events"><div class="wrap">
+  <div class="kicker">On the calendar</div>
+  <h2>Events &amp; ranger programs</h2>
+  <div class="grid" id="events-list"></div>
+</div></section>
+
+<section id="photos" class="alt"><div class="wrap">
+  <div class="kicker">Gallery</div>
+  <h2>Photos</h2>
+  <div class="gallery" id="gallery"></div>
+</div></section>
+</main>
+
+<footer><div class="wrap" id="footer"></div></footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ======================= DATA HELPERS ======================= */
+const D = JSON.parse(document.getElementById('park-data').textContent);
+const P = D.park || {};
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const _dp = new DOMParser();
+const strip = (s) => (_dp.parseFromString(String(s ?? ''), 'text/html').body.textContent || '').replace(/\s+/g, ' ').trim();
+const clip = (s, n = 200) => { s = strip(s); return s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '') + '…' : s; };
+const arr = (x) => Array.isArray(x) ? x : [];
+const imgUrl = (x) => { let u = typeof x === 'string' ? x : x?.url; if (!u) return null; if (u.startsWith('/')) u = 'https://www.nps.gov' + u; return u; };
+const firstImg = (o) => { for (const i of arr(o?.images)) { const u = imgUrl(i); if (u) return u; } return null; };
+const coords = (o) => {
+  let la = parseFloat(o?.latitude ?? o?.lat), lo = parseFloat(o?.longitude ?? o?.lon);
+  if ((isNaN(la) || isNaN(lo)) && typeof o?.latLong === 'string') {
+    const m = o.latLong.match(/lat:\s*(-?[\d.]+).*?long?:\s*(-?[\d.]+)/i); if (m) { la = +m[1]; lo = +m[2]; }
+  }
+  return isNaN(la) || isNaN(lo) || (la === 0 && lo === 0) ? null : [la, lo];
+};
+const haversineMi = (a, b) => {
+  const R = 3958.8, r = Math.PI / 180, dLa = (b[0]-a[0])*r, dLo = (b[1]-a[1])*r;
+  const h = Math.sin(dLa/2)**2 + Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dLo/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+};
+const fmtHrs = (h) => { const m = Math.round(h * 60); return m < 60 ? `${m} min` : `${Math.floor(m/60)} hr${m%60 ? ' ' + m%60 + ' min' : ''}`; };
+const parkName = P.fullName || 'National Park';
+const shortName = P.name || parkName;
+const isShen = P.parkCode === 'shen';
+
+const alerts = arr(D.alerts), camps = arr(D.campgrounds), vcs = arr(D.visitorCenters),
+      todos = arr(D.thingsToDo), events = arr(D.events), cams = arr(D.webcams), places = arr(D.places),
+      trails = arr(D.trailFeatures?.trails), osmPts = arr(D.trailFeatures?.points);
+
+/* ======================= SEASONS ======================= */
+const SEASONS = {
+  spring: { label: 'Spring', note: 'Wildflowers and trees come into full bloom along the ridge. It’s a great time for waterfall hikes and birdsong.' },
+  summer: { label: 'Summer', note: 'The forest is lush and green, and the ridge’s elevation offers relief from the heat down in the valley.' },
+  fall:   { label: 'Fall',   note: 'Shenandoah is known for vibrant fall foliage. Colors shift week to week, so check the park’s fall color reports before you go.' },
+  winter: { label: 'Winter', note: 'Bare trees open up long, clear views, and it’s a good season for spotting wildlife. Snow and ice are possible on the ridge even when the valley only gets rain, and Skyline Drive can close temporarily after storms.' },
+};
+const seasonFromDate = () => { const m = new Date().getMonth(); return m >= 2 && m <= 4 ? 'spring' : m >= 5 && m <= 7 ? 'summer' : m >= 8 && m <= 10 ? 'fall' : 'winter'; };
+let season = seasonFromDate();
+try { const s = localStorage.getItem('park-season'); if (SEASONS[s]) season = s; } catch (e) {}
+function setSeason(s) {
+  season = s;
+  document.documentElement.dataset.season = s;
+  document.querySelectorAll('.seasons button').forEach(b => b.setAttribute('aria-pressed', b.dataset.s === s));
+  const extra = isShen && s === 'fall' ? ` <a href="https://www.nps.gov/shen/learn/news/fall-color-reports.htm">Fall color reports →</a>` : '';
+  if ($('season-note')) $('season-note').innerHTML = `<div><div class="kicker" style="margin:0 0 4px">${SEASONS[s].label} in ${esc(shortName)}</div><div>${esc(SEASONS[s].note)}${extra}</div></div>`;
+  try { localStorage.setItem('park-season', s); } catch (e) {}
+  window.dispatchEvent(new CustomEvent('seasonchange', { detail: s }));
+}
+document.querySelectorAll('.seasons button').forEach(b => b.addEventListener('click', () => setSeason(b.dataset.s)));
+
+/* ======================= FIELD GUIDE INTRO ======================= */
+$('brand').textContent = shortName;
+$('about-text').innerHTML = String(P.description || '').split(/\n+/).filter(Boolean).map(p => `<p>${esc(strip(p))}</p>`).join('');
+
+/* ======================= ALERTS ======================= */
+if (alerts.length) {
+  $('alerts').innerHTML = `<div class="alerts"><div class="wrap"><details><summary>⚠︎ ${alerts.length} active park alert${alerts.length > 1 ? 's' : ''}: ${esc(alerts[0].title)}${alerts.length > 1 ? ' and more' : ''} — tap to read</summary><ul>` +
+    alerts.map(a => `<li><div class="cat">${esc(a.category)}</div><b>${esc(a.title)}</b><div>${esc(clip(a.description, 400))}</div>${a.url ? `<a href="${esc(a.url)}">More info</a>` : ''}</li>`).join('') +
+    `</ul></details></div></div>`;
+}
+
+/* ======================= WEATHER ======================= */
+const weatherSpot = (() => {
+  const vc = vcs.find(v => /byrd|big meadows/i.test(v.name || '')) || vcs[0];
+  const c = vc && coords(vc);
+  return c ? { c, label: vc.name } : coords(P) ? { c: coords(P), label: 'the center of the park' } : null;
+})();
+function renderForecast(periods, live) {
+  if (!periods.length) { $('forecast').innerHTML = ''; $('forecast-status').textContent = 'Forecast unavailable right now.'; return; }
+  window.FORECAST = { periods, live }; window.dispatchEvent(new Event('forecast'));
+  $('forecast-status').innerHTML = live
+    ? `<span class="live-dot"></span>Live National Weather Service forecast near ${esc(weatherSpot?.label)}.`
+    : `National Weather Service forecast as of ${new Date(D.generatedAt).toLocaleString()} (connect to the internet for the live version).`;
+  $('forecast').innerHTML = periods.slice(0, 10).map(p => `<div class="fc">
+    ${p.icon ? `<img src="${esc(p.icon)}" alt="">` : ''}
+    <div class="n">${esc(p.name)}</div><div class="t">${esc(p.temperature)}°${esc(p.temperatureUnit || 'F')}</div>
+    <div class="d">${esc(p.shortForecast)}</div><div class="d">${esc(p.windSpeed || '')}</div></div>`).join('');
+}
+renderForecast(arr(D.forecast), false);
+(async () => {
+  if (!weatherSpot) return;
+  try {
+    const [la, lo] = weatherSpot.c;
+    const pt = await (await fetch(`https://api.weather.gov/points/${la.toFixed(4)},${lo.toFixed(4)}`)).json();
+    const fc = await (await fetch(pt.properties.forecast)).json();
+    const periods = arr(fc?.properties?.periods);
+    if (periods.length) renderForecast(periods, true);
+  } catch (e) { /* keep snapshot */ }
+})();
+
+/* ======================= WEBCAMS ======================= */
+$('webcams').innerHTML = cams.length ? cams.map(c => {
+  const im = firstImg(c);
+  return `<div class="card cam reveal"><div class="ph" ${im ? `style="background-image:url('${esc(im)}')"` : ''}>${im ? '' : (c.isStreaming ? 'Live stream' : 'Webcam')}</div>
+    <div class="body"><h3>${esc(c.title)}</h3><p class="small muted">${esc(clip(c.description, 140))}</p>
+    ${c.url ? `<a class="btn ghost" href="${esc(c.url)}">${c.isStreaming ? 'Watch live' : 'See latest image'} →</a>` : ''}</div></div>`;
+}).join('') : `<div class="empty">No webcams listed for this park.</div>`;
+
+/* ======================= MAP ======================= */
+const pinIcon = (color, glyph) => L.divIcon({ className: '', html: `<div class="pin" style="background:${color}"><span style="color:#fff;font-weight:700">${glyph}</span></div>`, iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -24] });
+const popup = (title, text, url) => `<b>${esc(title)}</b>${text ? `<div>${esc(clip(text, 180))}</div>` : ''}${url ? `<a href="${esc(url)}">More →</a>` : ''}`;
+const LAYERS = [
+  { key: 'vc', label: 'Visitor centers', color: '#3f6f9f', glyph: 'i', items: vcs.map(v => [coords(v), popup(v.name, v.description, v.url)]) },
+  { key: 'camp', label: 'Campgrounds', color: '#2e7d4c', glyph: 'C', items: camps.map(c => [coords(c), popup(c.name, c.description, c.url)]) },
+  { key: 'todo', label: 'Things to do', color: '#c0561d', glyph: '★', items: todos.map(t => [coords(t), popup(t.title, t.shortDescription, t.url)]) },
+  { key: 'cam', label: 'Webcams', color: '#6b4fa0', glyph: 'W', items: cams.map(c => [coords(c), popup(c.title, c.description, c.url)]) },
+];
+const DOTS = [
+  { kind: 'viewpoint', label: 'Viewpoints', color: '#d99a2b' },
+  { kind: 'waterfall', label: 'Waterfalls', color: '#2b8fd9' },
+  { kind: 'trailhead', label: 'Trailheads', color: '#4f9a5e' },
+  { kind: 'peak', label: 'Peaks', color: '#7a5c3e' },
+];
+let map;
+try {
+  map = L.map('map', { scrollWheelZoom: false, zoomControl: true });
+  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | Style © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' }).addTo(map);
+  const overlays = {}, bounds = [];
+  if (trails.length) {
+    const g = L.layerGroup(trails.map(t => L.polyline(t.line, { color: '#8a4b12', weight: 2.2, opacity: .85, dashArray: '5 4' }).bindTooltip(esc(t.name), { sticky: true })));
+    g.addTo(map); overlays[`<span style="color:#8a4b12">━</span> Trails`] = g;
+  }
+  for (const d of DOTS) {
+    const pts = osmPts.filter(p => p.kind === d.kind);
+    if (!pts.length) continue;
+    const g = L.layerGroup(pts.map(p => L.circleMarker([p.lat, p.lon], { radius: 5, color: '#fff', weight: 1.5, fillColor: d.color, fillOpacity: 1 })
+      .bindPopup(`<b>${esc(p.name || d.label.slice(0, -1))}</b>${p.ele ? `<div>${esc(p.ele)} m elevation</div>` : ''}`)));
+    if (d.kind !== 'trailhead') g.addTo(map);
+    overlays[`<span style="color:${d.color}">●</span> ${d.label}`] = g;
+  }
+  for (const l of LAYERS) {
+    const ms = l.items.filter(([c]) => c).map(([c, html]) => { bounds.push(c); return L.marker(c, { icon: pinIcon(l.color, l.glyph) }).bindPopup(html); });
+    if (!ms.length) continue;
+    const g = L.layerGroup(ms).addTo(map);
+    overlays[`<span style="color:${l.color}">◆</span> ${l.label}`] = g;
+  }
+  L.control.layers(null, overlays, { collapsed: innerWidth < 700 }).addTo(map);
+  if (bounds.length > 1) map.fitBounds(bounds, { padding: [30, 30] }); else map.setView(coords(P) || [38.5, -78.4], 10);
+  $('legend').innerHTML = [...LAYERS.filter(l => l.items.some(([c]) => c)).map(l => [l.color, l.label]), ...DOTS.filter(d => osmPts.some(p => p.kind === d.kind)).map(d => [d.color, d.label])]
+    .map(([c, l]) => `<span class="chip"><span style="width:10px;height:10px;border-radius:50%;background:${c}"></span>${esc(l)}</span>`).join('') + (trails.length ? `<span class="chip">━ ${trails.length} trail segments</span>` : '');
+} catch (e) { $('map').innerHTML = '<div class="empty" style="margin:20px">The map needs an internet connection to load.</div>'; }
+
+/* ======================= THINGS TO DO ======================= */
+const durHours = (s) => {
+  const m = String(s || '').match(/(\d+(?:\.\d+)?)(?:\s*[-–to]+\s*(\d+(?:\.\d+)?))?\s*(min|hour|hr|day)/i);
+  if (!m) return null;
+  const v = m[2] ? (parseFloat(m[1]) + parseFloat(m[2])) / 2 : parseFloat(m[1]);
+  return /min/i.test(m[3]) ? v / 60 : /day/i.test(m[3]) ? v * 24 : v;
+};
+const seasonsOf = (t) => arr(t.season).map(s => String(s).toLowerCase());
+const actNames = (t) => arr(t.activities).map(a => a?.name || a).filter(Boolean);
+const actCount = {}; todos.forEach(t => actNames(t).forEach(a => actCount[a] = (actCount[a] || 0) + 1));
+const topActs = Object.entries(actCount).sort((a, b) => b[1] - a[1]).map(([a]) => a);
+let todoFilter = 'season', showAll = false;
+function todoCard(t) {
+  const im = firstImg(t), ss = seasonsOf(t);
+  return `<div class="card tcard reveal in"><div class="ph" ${im ? `style="background-image:url('${esc(im)}')"` : ''}></div><div class="body">
+    <h3>${esc(t.title)}</h3><div class="meta">${t.duration ? `<span class="chip">${esc(t.duration)}</span>` : ''}${actNames(t).slice(0, 2).map(a => `<span class="chip">${esc(a)}</span>`).join('')}</div>
+    <p class="small muted">${esc(clip(t.shortDescription, 170))}</p>
+    ${ss.length && ss.length < 4 ? `<div class="small muted">Best in: ${esc(arr(t.season).join(', '))}</div>` : ''}
+    ${t.url ? `<a class="more" href="${esc(t.url)}">Details on NPS.gov →</a>` : ''}</div></div>`;
+}
+function renderTodos() {
+  const filters = [['season', `Good in ${SEASONS[season].label.toLowerCase()}`], ['all', 'All'], ...topActs.slice(0, 6).map(a => [a, a])];
+  $('todo-filters').innerHTML = filters.map(([k, l]) => `<button class="chip" aria-pressed="${k === todoFilter}" data-k="${esc(k)}">${esc(l)}</button>`).join('');
+  $('todo-filters').querySelectorAll('button').forEach(b => b.onclick = () => { todoFilter = b.dataset.k; showAll = false; renderTodos(); });
+  let list = todos.filter(t => todoFilter === 'all' ? true : todoFilter === 'season' ? (!seasonsOf(t).length || seasonsOf(t).includes(season)) : actNames(t).includes(todoFilter));
+  const n = list.length; if (!showAll) list = list.slice(0, 9);
+  $('todo-grid').innerHTML = n ? list.map(todoCard).join('') + (n > list.length ? `<div style="grid-column:1/-1"><button class="btn ghost" id="todo-more">Show all ${n}</button></div>` : '') : `<div class="empty">Nothing matches that filter yet.</div>`;
+  const more = $('todo-more'); if (more) more.onclick = () => { showAll = true; renderTodos(); };
+}
+$('activities').innerHTML = arr(P.activities).map(a => `<span class="chip">${esc(a.name)}</span>`).join('');
+
+/* ======================= TRIP PLANNER ======================= */
+const TIMES = [['Half day', 4], ['Full day', 8], ['Weekend', 16]];
+const lats = [...todos, ...vcs, ...camps].map(coords).filter(Boolean).map(c => c[0]);
+const STARTS = isShen
+  ? [['North (Front Royal)', 'n'], ['Middle (Thornton Gap / Swift Run Gap)', 'm'], ['South (Rockfish Gap)', 's']]
+  : [['North', 'n'], ['Middle', 'm'], ['South', 's']];
+const pl = { interests: new Set(), time: 8, start: 'n' };
+function segButtons(el, items, get, set) {
+  $(el).innerHTML = items.map(([l, v]) => `<button type="button" class="chip" data-v="${esc(v)}" aria-pressed="${String(get() === v)}">${esc(l)}</button>`).join('');
+  $(el).querySelectorAll('button').forEach(b => b.onclick = () => { set(isNaN(+b.dataset.v) ? b.dataset.v : +b.dataset.v); segButtons(el, items, get, set); plan(); });
+}
+function interestButtons() {
+  $('pl-interests').innerHTML = topActs.slice(0, 12).map(a => `<button type="button" class="chip" data-a="${esc(a)}" aria-pressed="${pl.interests.has(a)}">${esc(a)}</button>`).join('') || '<span class="muted small">No activity tags in the data.</span>';
+  $('pl-interests').querySelectorAll('button').forEach(b => b.onclick = () => { const a = b.dataset.a; pl.interests.has(a) ? pl.interests.delete(a) : pl.interests.add(a); interestButtons(); plan(); });
+}
+const DRIVE_MPH = 35, ROAD_FACTOR = 1.35;
+const driveHrs = (a, b) => (a && b) ? haversineMi(a, b) * ROAD_FACTOR / DRIVE_MPH : 0.25;
+function plan() {
+  const budget = pl.time;
+  const maxLat = Math.max(...lats), minLat = Math.min(...lats), midLat = (maxLat + minLat) / 2;
+  const cands = todos.map(t => ({ t, c: coords(t), h: durHours(t.duration) ?? 1.5 }))
+    .filter(x => x.h <= Math.max(budget / 2, 6) && x.h >= 0.1)
+    .map(x => {
+      const acts = actNames(x.t);
+      const match = [...pl.interests].filter(a => acts.includes(a)).length;
+      const sOk = !seasonsOf(x.t).length || seasonsOf(x.t).includes(season);
+      return { ...x, match, score: match * 3 + (sOk ? 1 : -2) + (firstImg(x.t) ? .2 : 0) + (x.c ? .3 : 0) };
+    })
+    .filter(x => !pl.interests.size || x.match > 0)
+    .sort((a, b) => b.score - a.score || a.h - b.h);
+  const picked = []; let used = 0;
+  for (const x of cands) { if (used + x.h + 0.35 <= budget) { picked.push(x); used += x.h + 0.35; } if (picked.length >= 8) break; }
+  const key = (x) => x.c ? x.c[0] : midLat;
+  if (pl.start === 'n') picked.sort((a, b) => key(b) - key(a));
+  else if (pl.start === 's') picked.sort((a, b) => key(a) - key(b));
+  else picked.sort((a, b) => Math.abs(key(a) - midLat) - Math.abs(key(b) - midLat));
+  if (!picked.length) { $('pl-result').innerHTML = `<div class="empty">No matches for that combination. Try fewer interests or more time.</div>`; return; }
+  const startLat = pl.start === 'n' ? maxLat : pl.start === 's' ? minLat : midLat;
+  let clock = 9, day = 1, prev = null, driving = 0, html = '<ol class="itin">';
+  const clockStr = (h) => { const hh = Math.floor(h) % 24, mm = Math.round((h % 1) * 60); const d = new Date(2000, 0, 1, hh, mm === 60 ? 59 : mm); return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
+  picked.forEach((x, i) => {
+    let dh = prev ? driveHrs(prev.c, x.c) : (x.c ? Math.abs(x.c[0] - startLat) * 69 * ROAD_FACTOR / DRIVE_MPH : 0.25);
+    if (budget > 8 && day === 1 && clock + dh + x.h > 17.5) {
+      const ref = prev?.c || x.c;
+      const camp = ref && camps.filter(c => coords(c)).sort((a, b) => haversineMi(coords(a), ref) - haversineMi(coords(b), ref))[0];
+      html += `<li><span class="dot">☾</span><div class="time">Evening</div><b>Overnight${camp ? `: ${esc(camp.name)}` : ''}</b><div class="small muted">${camp ? 'Closest campground to where you end day one.' : 'Find lodging or camping for the night.'}</div></li>`;
+      day = 2; clock = 9;
+    }
+    if (dh > 0.05) { html += `<div class="drivebit">↓ about ${fmtHrs(dh)} of driving</div>`; driving += dh; clock += dh; }
+    html += `<li><span class="dot">${i + 1}</span><div class="time">${budget > 8 ? `Day ${day} · ` : ''}${clockStr(clock)}</div>
+      <b>${x.t.url ? `<a href="${esc(x.t.url)}">${esc(x.t.title)}</a>` : esc(x.t.title)}</b>
+      <div class="small muted">${esc(x.t.duration || 'about ' + fmtHrs(x.h))} · ${esc(clip(x.t.shortDescription, 120))}</div></li>`;
+    clock += x.h; prev = x;
+  });
+  html += '</ol>';
+  const total = picked.reduce((s, x) => s + x.h, 0) + driving;
+  $('pl-result').innerHTML = `<div class="kicker" style="margin-bottom:4px">Your ${TIMES.find(t => t[1] === budget)[0].toLowerCase()}</div>
+    <h3>${picked.length} stop${picked.length > 1 ? 's' : ''} · about ${fmtHrs(total)}</h3>
+    <p class="small muted">Including roughly ${fmtHrs(driving)} on the road at the ${DRIVE_MPH} mph speed limit. Times are estimates — check alerts and conditions before you go.</p>${html}`;
+}
+if (todos.length) {
+  interestButtons();
+  segButtons('pl-time', TIMES, () => pl.time, v => pl.time = v);
+  segButtons('pl-start', STARTS, () => pl.start, v => pl.start = v);
+  plan();
+} else $('planner').style.display = 'none';
+
+/* ======================= PLAN YOUR VISIT ======================= */
+const money = (c) => Number(c) === 0 ? 'Free' : `$${Number(c).toFixed(2)}`;
+$('fees').innerHTML = [...arr(P.entranceFees), ...arr(P.entrancePasses).slice(0, 2)].map(f => `<div class="card reveal"><div class="price">${money(f.cost)}</div><h3 style="margin-top:10px">${esc(f.title)}</h3><p class="small muted">${esc(clip(f.description, 220))}</p></div>`).join('') || `<div class="empty">No fee information listed.</div>`;
+const hoursTable = (h) => h?.standardHours ? `<table class="hours">${['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map(d => `<tr><td>${d[0].toUpperCase() + d.slice(1)}</td><td>${esc(h.standardHours[d])}</td></tr>`).join('')}</table>` : '';
+$('vcs').innerHTML = vcs.map(v => `<div class="card reveal"><h3>${esc(v.name)}</h3><p class="small muted">${esc(clip(v.description, 220))}</p>${arr(v.operatingHours)[0] ? `<p class="small">${esc(clip(v.operatingHours[0].description, 160))}</p>` : ''}${v.url ? `<a class="small" href="${esc(v.url)}">Details</a>` : ''}</div>`).join('') || `<div class="empty">No visitor centers listed.</div>`;
+$('camps').innerHTML = camps.map(c => {
+  const im = firstImg(c), cs = c.campsites || {}, fee = arr(c.fees)[0];
+  return `<div class="card tcard reveal"><div class="ph" ${im ? `style="background-image:url('${esc(im)}')"` : ''}></div><div class="body">
+    <h3>${esc(c.name)}</h3><div class="kv">${cs.totalSites && cs.totalSites !== '0' ? `<span><b>${esc(cs.totalSites)}</b> sites</span>` : ''}${+c.numberOfSitesReservable ? `<span><b>${esc(c.numberOfSitesReservable)}</b> reservable</span>` : ''}${+c.numberOfSitesFirstComeFirstServe ? `<span><b>${esc(c.numberOfSitesFirstComeFirstServe)}</b> first-come</span>` : ''}${fee ? `<span><b>${money(fee.cost)}</b> ${esc(fee.title || '')}</span>` : ''}</div>
+    <p class="small muted">${esc(clip(c.description, 170))}</p>
+    ${c.reservationUrl ? `<a class="btn" href="${esc(c.reservationUrl)}">Reserve</a>` : c.url ? `<a class="more" href="${esc(c.url)}">Details →</a>` : ''}</div></div>`;
+}).join('') || `<div class="empty">No campgrounds listed.</div>`;
+const addr = arr(P.addresses).find(a => a.type === 'Physical') || arr(P.addresses)[0];
+const phone = arr(P.contacts?.phoneNumbers).find(p => p.type === 'Voice') || arr(P.contacts?.phoneNumbers)[0];
+const email = arr(P.contacts?.emailAddresses)[0];
+$('hours').innerHTML = arr(P.operatingHours).map(h => `<div class="card reveal"><h3>${esc(h.name)}</h3><p class="small muted">${esc(clip(h.description, 260))}</p>${hoursTable(h)}</div>`).join('') +
+  `<div class="card reveal"><h3>Directions</h3><p class="small">${esc(clip(P.directionsInfo, 600))}</p>${P.directionsUrl ? `<a class="btn ghost" href="${esc(P.directionsUrl)}">Full directions</a>` : ''}</div>
+   <div class="card reveal"><h3>Contact</h3>${addr ? `<p class="small">${esc(addr.line1)}<br>${esc(addr.city)}, ${esc(addr.stateCode)} ${esc(addr.postalCode)}</p>` : ''}${phone ? `<p class="small">Phone: <a href="tel:${esc(phone.phoneNumber)}">${esc(phone.phoneNumber)}</a></p>` : ''}${email ? `<p class="small">Email: <a href="mailto:${esc(email.emailAddress)}">${esc(email.emailAddress)}</a></p>` : ''}${P.url ? `<a class="btn" href="${esc(P.url)}">Official NPS page</a>` : ''}</div>`;
+
+/* ======================= EVENTS ======================= */
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const nextDate = (e) => { const ds = [...arr(e.dates), e.datestart].filter(Boolean).map(d => new Date(d + 'T00:00:00')).filter(d => !isNaN(d) && d >= today).sort((a, b) => a - b); return ds[0] || null; };
+const upcoming = events.map(e => ({ e, d: nextDate(e) })).filter(x => x.d).sort((a, b) => a.d - b.d).slice(0, 9);
+$('events-list').innerHTML = upcoming.map(({ e, d }) => {
+  const t = arr(e.times)[0];
+  return `<div class="card event reveal"><div class="cal"><span>${d.toLocaleString([], { month: 'short' })}</span><b>${d.getDate()}</b></div><div>
+    <h3>${esc(e.title)}</h3><div class="kv">${t ? `<span>${esc(t.timestart)}${t.timeend ? ' – ' + esc(t.timeend) : ''}</span>` : ''}${e.location ? `<span>${esc(clip(e.location, 60))}</span>` : ''}${String(e.isfree) === 'true' ? '<span><b>Free</b></span>' : ''}</div>
+    <p class="small muted">${esc(clip(e.description, 160))}</p>${e.infourl ? `<a class="small" href="${esc(e.infourl)}">More info</a>` : ''}</div></div>`;
+}).join('') || `<div class="empty">No upcoming events were listed when this page was built. Rebuild the site to refresh the calendar.</div>`;
+
+/* ======================= GALLERY & FOOTER ======================= */
+const gal = [...arr(P.images).slice(1), ...todos.map(t => arr(t.images)[0]).filter(Boolean)].filter(i => imgUrl(i)).slice(0, 12);
+$('gallery').innerHTML = gal.map(i => `<figure><img loading="lazy" onerror="this.parentNode.remove()" src="${esc(imgUrl(i))}" alt="${esc(i.altText || i.title || '')}"><figcaption>${esc(i.title || '')}${i.credit ? ` · ${esc(i.credit)}` : ''}</figcaption></figure>`).join('');
+if (!gal.length) $('photos').style.display = 'none';
+$('footer').innerHTML = `Built with the <b>nps_mcp</b> server on ${new Date(D.generatedAt).toLocaleDateString([], { dateStyle: 'long' })}.
+  Park information and photos: National Park Service API. Forecast: National Weather Service. Trails and viewpoints: © OpenStreetMap contributors.
+  Elevation: Terrain Tiles on AWS Open Data. Map tiles: OpenTopoMap. ${P.url ? `<a href="${esc(P.url)}">Official park website</a>.` : ''}`;
+
+/* ======================= CHOOSE-YOUR-OWN ADVENTURE ======================= */
+/* Everything about the story lives in SCENES below. Each scene can pull a real photo
+   and mile marker from the park data (the `find` pattern), and lists choices that
+   point to other scenes by id. Edit the text freely! */
+const ICONS = {
+  map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>',
+  paw: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6.5" cy="9" r="2"/><circle cx="12" cy="6.5" r="2"/><circle cx="17.5" cy="9" r="2"/><path d="M12 11c-3 0-6 4-6 6.5 0 1.5 1.2 2.5 2.7 2.5 1.2 0 2.1-.7 3.3-.7s2.1.7 3.3.7c1.5 0 2.7-1 2.7-2.5C18 15 15 11 12 11z"/></svg>',
+  mountain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 20 9 7l4 6 3-4 6 11H2z"/></svg>',
+  drop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg>',
+  tent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3z"/><path d="M12 11l-4 9M12 11l4 9"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z"/></svg>',
+  car: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 16v-4l2-5h14l2 5v4H3z"/><circle cx="7" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="17" r="2" fill="currentColor"/></svg>',
+  ranger: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5c-2 0-3.2 1.6-3.6 4.4C5.6 10 3 11 2 12.5c3.5 1.4 16.5 1.4 20 0-1-1.5-3.6-2.5-6.4-3.1C15.2 6.6 14 5 12 5z"/><rect x="8" y="13.6" width="8" height="1.6" rx=".8" opacity=".6"/></svg>',
+};
+const BADGES = {
+  map:    { name: 'Map Reader', icon: 'map' },
+  wild:   { name: 'Wildlife Watcher', icon: 'paw' },
+  summit: { name: 'Summit Seeker', icon: 'mountain' },
+  falls:  { name: 'Waterfall Wanderer', icon: 'drop' },
+  camp:   { name: 'Happy Camper', icon: 'tent' },
+  ranger: { name: 'Junior Ranger', icon: 'star' },
+  road:   { name: 'Road Tripper', icon: 'car' },
+};
+
+const SCENES = {
+  start: {
+    mp: 0, title: 'Ready, Junior Explorer?',
+    text: (x) => [
+      `Hi there! I’m Ranger Ridge, and I’ll be your guide today. We’re exploring ${x.park} by driving Skyline Drive, a road that runs 105 miles along the top of the Blue Ridge Mountains.`,
+      `At every stop, <b>you</b> choose what happens next. Earn badges, discover real places, and find all four endings!`,
+      x.forecast ? `<span class="small muted">Real-life weather check: the National Weather Service says “${esc(x.forecast.shortForecast)}, ${esc(x.forecast.temperature)}°${esc(x.forecast.temperatureUnit || 'F')}” near ${esc(x.weatherPlace)}.</span>` : '',
+      `First things first… <b>what season is it on our trip?</b>`,
+    ],
+    seasonPicker: true,
+  },
+  entrance: {
+    mp: 0, title: 'Front Royal Entrance', find: /front royal|north entrance/i,
+    season: {
+      spring: 'Tiny new leaves and wildflowers are popping up everywhere.',
+      summer: 'It’s warm down in the valley, but the air feels cooler up on the ridge.',
+      fall: 'The trees are turning red, orange and gold!',
+      winter: 'The trees are bare, so you can see far, far away. Watch for ice on the road!',
+    },
+    text: (x) => [
+      `Our car rolls up to the Front Royal Entrance at <b>mile 0</b>. Skyline Drive counts its miles from here, north to south, all the way to mile 105.`,
+      x.alerts ? `Ranger Ridge checks the bulletin board: there ${x.alerts === 1 ? 'is 1 real park alert' : `are ${x.alerts} real park alerts`} today. Grown-ups can read ${x.alerts === 1 ? 'it' : 'them'} at the top of this page.` : '',
+    ],
+    fact: 'Skyline Drive was built in the 1930s. About 1,000 workers from the Civilian Conservation Corps helped build it!',
+    choices: [
+      { label: 'Stop at the visitor center for an explorer map', to: 'dickey' },
+      { label: 'Drive straight into the mountains!', to: 'overlook' },
+    ],
+  },
+  dickey: {
+    mp: 4.6, title: 'Dickey Ridge Visitor Center', find: /dickey ridge/i, badge: 'map',
+    text: () => [`You hop out at the Dickey Ridge Visitor Center and grab a park map. Ranger Ridge shows you how to find the mile markers on it. Now you’ll always know where you are!`],
+    fact: 'Shenandoah became a national park on December 26, 1935. That’s almost 100 years ago!',
+    choices: [{ label: 'Back in the car. Onward!', to: 'overlook' }],
+  },
+  overlook: {
+    mp: 20, approx: true, useDataMp: true, find: /overlook/i, maxMp: 40,
+    title: (p) => p ? p.title : 'A Scenic Overlook',
+    season: {
+      spring: 'Blooming trees dot the green hills like sprinkles.',
+      summer: 'The forest below looks like a giant green blanket.',
+      fall: 'The hills look like a huge patchwork quilt of reds, oranges and yellows.',
+      winter: 'With no leaves on the trees, you can see even more mountains.',
+    },
+    text: () => [`You pull into an overlook, a parking spot made just for looking at the view. Far below is the Shenandoah Valley, and the mountains fade away in soft blue layers.`],
+    fact: 'Why is the Blue Ridge blue? Trees give off a natural haze, and from far away it makes the mountains look blue!',
+    choices: [
+      { label: 'Grab the binoculars and look for animals', to: 'bear' },
+      { label: 'Keep driving to the highest point on the road', to: 'skyland' },
+    ],
+  },
+  bear: {
+    mp: 28, approx: true, after: ['overlook', 3], find: /black bear|bear/i, title: 'Wildlife Spotting!', badge: 'wild',
+    season: { winter: 'In winter, lots of bears are snoozing in their dens, so seeing one is extra rare!' },
+    text: () => [
+      `Something big and black is moving near the trees… it’s a <b>black bear!</b>`,
+      `You stay in your group and give it plenty of space. The bear sniffs around, then wanders back into the forest.`,
+    ],
+    fact: 'Park rules say to stay at least 150 feet (50 yards) away from a bear. That’s about half a football field! Never feed a bear, and never run.',
+    extraFact: 'Other animals that live here: white-tailed deer, foxes, bobcats, raccoons, and even river otters!',
+    choices: [{ label: 'Keep driving south', to: 'skyland' }],
+  },
+  skyland: {
+    mp: 41.7, title: 'Skyland', find: /skyland/i,
+    text: () => [`You made it to Skyland at mile 41.7. This is the <b>highest point on all of Skyline Drive</b>: 3,680 feet above sea level!`],
+    fact: 'Up this high, the air is often cooler than down in the valley. Bring a jacket!',
+    choices: [
+      { label: 'Climb Hawksbill, the tallest mountain in the park', to: 'hawksbill' },
+      { label: 'Drive on to Big Meadows', to: 'meadows' },
+    ],
+    extras: [{ label: 'See these mountains in 3D ↓', go: 'terrain' }],
+  },
+  hawksbill: {
+    mp: 45.6, approx: true, title: 'Hawksbill Summit', find: /hawksbill/i, badge: 'summit',
+    season: {
+      fall: 'From the top, the whole valley glows with fall colors.',
+      winter: 'Brrr! It’s windy and cold at the top. Good thing you wore a hat.',
+    },
+    text: () => [`Time to hike! The trail goes up, up, up… and then you’re on top of <b>Hawksbill, the tallest mountain in Shenandoah</b>. Mountains stretch out in every direction.`],
+    fact: 'Hawksbill is 4,051 feet tall. That’s like stacking about 13 Statues of Liberty on top of each other!',
+    choices: [
+      { label: 'Stay and watch the sunset', to: 'end_sunset' },
+      { label: 'Hike down and drive to Big Meadows', to: 'meadows' },
+    ],
+    extras: [{ label: 'Find Hawksbill in 3D ↓', go: 'terrain' }],
+  },
+  meadows: {
+    mp: 51, title: 'Big Meadows', find: /big meadows(?! campground)|byrd/i,
+    text: () => [`Big Meadows is a wide, grassy meadow right in the middle of the park. Deer love to graze here, especially in the early morning and evening.`, `What’s next, explorer?`],
+    fact: 'Big Meadows is home to the Harry F. Byrd Visitor Center, and it’s near mile 51, about halfway along Skyline Drive.',
+    choices: (x) => [
+      { label: 'Hike to a waterfall', to: 'falls' },
+      { label: 'Set up camp for the night', to: 'camp' },
+      { label: x.bad ? 'Uh-oh, the sky looks gloomy. Duck into the visitor center!' : 'Explore the visitor center', to: 'vc' },
+    ],
+  },
+  falls: {
+    mp: 50.7, title: 'Dark Hollow Falls', find: /dark hollow/i, badge: 'falls',
+    season: {
+      spring: 'Spring rain makes the waterfall extra splashy!',
+      summer: 'The cool spray from the falls feels great on a warm day.',
+      fall: 'Colorful leaves float down the stream like tiny boats.',
+      winter: 'Some of the water may be frozen into icicles. Step carefully!',
+    },
+    text: () => [`The trail goes <b>down</b> first, about three-quarters of a mile, until you hear rushing water… Dark Hollow Falls! The water tumbles down 70 feet of rocks.`],
+    fact: 'Explorer tip: going down is the easy part. The climb back up is the hard part, so bring water and take breaks! The whole hike is 1.4 miles.',
+    choices: [
+      { label: 'Rest your legs at camp', to: 'camp' },
+      { label: 'Keep driving south', to: 'south' },
+    ],
+  },
+  camp: {
+    mp: 51.2, approx: true, find: /big meadows campground|campground/i, badge: 'camp',
+    title: (p) => p ? p.title : 'Campground',
+    season: { winter: 'Real explorers check ahead, because many park campgrounds close in the cold months.' },
+    text: (x, p) => [`You set up your tent at ${p ? esc(p.title) : 'the campground'}. Zip, snap, done! Time for dinner.`],
+    fact: 'Keep all your food locked in the car or a food locker, so bears don’t smell a snack!',
+    choices: [
+      { label: 'Stay up and look at the stars', to: 'end_stars' },
+      { label: 'Sleep, then drive south in the morning', to: 'south' },
+    ],
+  },
+  vc: {
+    mp: 51, title: 'Byrd Visitor Center', find: /byrd/i,
+    text: (x) => [
+      x.bad ? `Plip, plop! ${x.season === 'winter' ? 'Snowflakes start' : 'Raindrops start'} falling, so you hurry inside the Harry F. Byrd Visitor Center.` : `You step inside the Harry F. Byrd Visitor Center.`,
+      `There are exhibits about the park’s history, and a ranger asks if you’d like to become a Junior Ranger.`,
+    ],
+    fact: 'Many national parks have a Junior Ranger program. Ask at a visitor center for an activity book!',
+    choices: [{ label: 'Yes! Take the Junior Ranger promise', to: 'end_ranger' }],
+  },
+  south: {
+    mp: 80, approx: true, useDataMp: true, find: /loft mountain/i, minMp: 66,
+    title: (p) => p ? p.title : 'The South District',
+    text: () => [`You keep driving south. The road curves past more overlooks and trailheads, and the mountains roll on and on like waves.`],
+    fact: 'The Appalachian Trail, a hiking path that goes through 14 states, crosses Skyline Drive many times. About 101 miles of it are inside Shenandoah!',
+    choices: [{ label: 'Drive to the very end of Skyline Drive', to: 'end_road' }],
+  },
+  end_sunset: {
+    mp: 45.6, approx: true, find: /hawksbill/i, ending: 'Sunset Summit',
+    title: 'Ending: Sunset Summit',
+    text: () => [`The sky turns pink, orange and purple as the sun sinks behind the mountains. You’ll remember this view forever.`],
+    fact: 'Real-life tip: if you watch a sunset from a mountain, bring a flashlight for the walk down!',
+  },
+  end_stars: {
+    mp: 51.2, approx: true, find: /big meadows campground|campground/i, ending: 'Starry Night',
+    title: 'Ending: Starry Night',
+    text: () => [`Up on the ridge, far away from city lights, the sky fills with stars. You spot a shooting star and make a wish.`],
+    fact: 'Shenandoah’s dark skies make it a great place to go stargazing.',
+  },
+  end_ranger: {
+    mp: 51, find: /byrd/i, ending: 'Junior Ranger', badge: 'ranger',
+    title: 'Ending: Junior Ranger',
+    text: () => [`You raise your right hand and promise to help protect parks, plants and animals. The ranger pins a shiny badge on your shirt. Congratulations, Junior Ranger!`],
+    fact: 'Parks belong to everyone, and Junior Rangers help take care of them.',
+  },
+  end_road: {
+    mp: 105, title: 'Ending: Road Trip Champion', find: /rockfish/i, ending: 'Road Trip Champion', badge: 'road',
+    text: () => [`You made it to Rockfish Gap at <b>mile 105</b>, the southern end of Skyline Drive! You drove the whole thing.`, `From here, another scenic road, the Blue Ridge Parkway, keeps winding south.`],
+    fact: 'Only drivers who go all 105 miles see the entire road. What a trip!',
+  },
+};
+const ENDINGS = Object.keys(SCENES).filter(k => SCENES[k].ending);
+
+/* ---- tie scenes to real park data ---- */
+const ADV_MP_RE = /\b(?:mile(?:\s*post)?|milepost|MP)\s*(\d{1,3}(?:\.\d{1,2})?)\b/i;
+const advMp = (...ts) => { for (const t of ts) { const m = strip(t).match(ADV_MP_RE); if (m && +m[1] <= 105.5) return +m[1]; } return null; };
+const POOL = [
+  ...places.map(o => ({ o, title: o.title, texts: [o.listingDescription, o.bodyText] })),
+  ...todos.map(o => ({ o, title: o.title, texts: [o.location, o.shortDescription] })),
+  ...vcs.map(o => ({ o, title: o.name, texts: [o.description] })),
+  ...camps.map(o => ({ o, title: o.name, texts: [o.description] })),
+].filter(x => x.title);
+const placeCache = {};
+function placeFor(id) {
+  if (id in placeCache) return placeCache[id];
+  const sc = SCENES[id]; let best = null;
+  if (sc.find) {
+    const hits = POOL.filter(x => sc.find.test(x.title)).map(x => ({ ...x, mp: advMp(...x.texts, x.title), img: firstImg(x.o) }))
+      .filter(x => (sc.maxMp == null || (x.mp != null && x.mp <= sc.maxMp)) && (sc.minMp == null || (x.mp != null && x.mp >= sc.minMp)));
+    hits.sort((a, b) => (!!b.img - !!a.img) || (a.title.length - b.title.length));
+    const h = hits[0];
+    if (h) best = { title: h.title, img: h.img, url: h.o.url, c: coords(h.o), mp: h.mp };
+  }
+  return placeCache[id] = best;
+}
+const parkPhotos = arr(P.images).map(imgUrl).filter(Boolean);
+const sceneIds = Object.keys(SCENES);
+function sceneInfo(id) {
+  const sc = SCENES[id], p = placeFor(id);
+  const useData = sc.useDataMp && p?.mp != null;
+  let mp = useData ? p.mp : sc.mp;
+  if (sc.after) mp = Math.min(40, Math.round(sceneInfo(sc.after[0]).mp + sc.after[1]));
+  const approx = sc.approx && !useData;
+  const img = p?.img || (parkPhotos.length ? parkPhotos[sceneIds.indexOf(id) % parkPhotos.length] : null);
+  const title = typeof sc.title === 'function' ? sc.title(p) : sc.title;
+  return { id, sc, p, mp, approx, img, title, short: approx ? `~Mile ${Math.round(mp)}` : `Mile ${mp}`, mileLabel: id === 'start' ? 'Mile 0 · Start' : approx ? `Around mile ${Math.round(mp)}` : `Mile ${mp}` };
+}
+
+/* ---- state ---- */
+let adv = { path: ['start'] };
+try { const s = JSON.parse(localStorage.getItem('adv-state')); if (s?.path?.every(id => SCENES[id])) adv = s; } catch (e) {}
+let found = [];
+try { found = JSON.parse(localStorage.getItem('adv-endings')) || []; } catch (e) {}
+const save = () => { try { localStorage.setItem('adv-state', JSON.stringify(adv)); localStorage.setItem('adv-endings', JSON.stringify(found)); } catch (e) {} };
+const earned = () => new Set(adv.path.map(id => SCENES[id].badge).filter(Boolean));
+const ctx = () => {
+  const f = window.FORECAST?.periods?.[0];
+  return { park: esc(parkName), season, alerts: alerts.length, forecast: f, weatherPlace: weatherSpot?.label || 'the park',
+    bad: season === 'winter' || /rain|shower|storm|thunder|fog|snow|sleet|drizzle|ice/i.test(f?.shortForecast || '') };
+};
+
+/* ---- road with photos ---- */
+let advRoad = null, carMp = 0;
+function buildAdvRoad() {
+  const box = $('road'); if (!box || !box.clientWidth) { advRoad = null; return; }
+  const w = box.clientWidth, h = box.clientHeight, cx = 34, amp = 14;
+  const pts = []; for (let y = 14; y <= h - 14; y += 6) pts.push([cx + amp * Math.sin(y / 70) + amp * .35 * Math.sin(y / 23), y]);
+  const d = 'M' + pts.map(p => p.map(n => n.toFixed(1)).join(',')).join(' L');
+  box.innerHTML = `<svg viewBox="0 0 ${w} ${h}"><path class="asphalt" d="${d}"/><path class="done" d="${d}"/><path class="dash" d="${d}"/><g class="dots"></g><circle class="car" r="10"/></svg><div class="thumbs"></div>`;
+  const path = box.querySelector('.asphalt'), total = path.getTotalLength();
+  const done = box.querySelector('.done'); done.style.strokeDasharray = total;
+  advRoad = { box, total, done, at: (mp) => path.getPointAtLength(total * Math.min(1, Math.max(0, mp / 105))), car: box.querySelector('.car'), dots: box.querySelector('.dots'), thumbs: box.querySelector('.thumbs') };
+  placeCar(carMp);
+}
+function placeCar(mp) {
+  if (!advRoad) return;
+  const p = advRoad.at(mp); advRoad.car.setAttribute('cx', p.x); advRoad.car.setAttribute('cy', p.y);
+  advRoad.done.style.strokeDashoffset = advRoad.total * (1 - mp / 105);
+}
+function driveTo(target) {
+  const from = carMp, t0 = performance.now(), dur = Math.min(1600, 400 + Math.abs(target - from) * 25);
+  const step = (t) => { const k = Math.min(1, (t - t0) / dur), e = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2; carMp = from + (target - from) * e; placeCar(carMp); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+  const bar = document.querySelector('#adv-progress .bar span'); if (bar) bar.style.width = (target / 105 * 100) + '%';
+}
+function drawVisited(visited) {
+  if (!advRoad) return;
+  advRoad.dots.innerHTML = ''; advRoad.thumbs.innerHTML = '';
+  let lastY = -99;
+  visited.filter((v, i, a) => !(v.sc.ending && i && Math.abs(a[i - 1].mp - v.mp) < 1)).forEach(v => {
+    const p = advRoad.at(v.mp);
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', 5); c.setAttribute('class', 'stopdot on'); advRoad.dots.appendChild(c);
+    const y = Math.max(p.y, lastY + 56); lastY = y;
+    const t = document.createElement('div'); t.className = 'thumb'; t.style.left = '64px'; t.style.top = y + 'px';
+    t.innerHTML = `<i ${v.img ? `style="background-image:url('${esc(v.img)}')"` : ''}></i><span><b>${esc(v.short)}</b>${esc(v.title.replace(/^Ending: /, ''))}</span>`;
+    advRoad.thumbs.appendChild(t);
+  });
+}
+
+/* ---- map route ---- */
+let routeLayer = null;
+function drawRoute(visited) {
+  if (typeof L === 'undefined' || !map) return;
+  if (routeLayer) routeLayer.remove();
+  const pts = visited.filter(v => v.p?.c).map(v => v.p.c);
+  if (!pts.length) return;
+  routeLayer = L.layerGroup([
+    L.polyline(pts, { color: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#c0561d', weight: 5, opacity: .9 }),
+    ...visited.filter(v => v.p?.c).map((v, i) => L.circleMarker(v.p.c, { radius: 9, color: '#fff', weight: 3, fillColor: '#1b241e', fillOpacity: 1 }).bindTooltip(`${i + 1}. ${esc(v.title)}`)),
+  ]).addTo(map);
+}
+
+/* ---- rendering ---- */
+function toast(badgeKey) {
+  const b = BADGES[badgeKey], el = $('toast');
+  el.innerHTML = `<span class="badge on">${ICONS[b.icon]}</span><span>Badge earned: ${esc(b.name)}!</span>`;
+  el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+function renderBadges(pop) {
+  const e = earned();
+  $('badges').innerHTML = Object.entries(BADGES).map(([k, b]) => `<span role="listitem" class="badge ${e.has(k) ? 'on' : ''} ${k === pop ? 'pop' : ''}" title="${esc(b.name)}${e.has(k) ? ' (earned!)' : ''}" aria-label="${esc(b.name)}${e.has(k) ? ', earned' : ', not earned yet'}">${ICONS[b.icon]}</span>`).join('');
+}
+function renderScene(animate) {
+  const id = adv.path[adv.path.length - 1], info = sceneInfo(id), sc = info.sc, x = ctx();
+  const visited = adv.path.slice(1).map(sceneInfo).map((v, i, a) => v).filter((v, i, a) => a.findIndex(u => u.title === v.title) === i);
+  $('adv-park').textContent = parkName;
+  $('adv-bg').style.backgroundImage = info.img ? `url("${info.img}")` : '';
+  const paras = (sc.text ? sc.text(x, info.p) : []).filter(Boolean).map(t => `<p>${t}</p>`).join('');
+  const sLine = sc.season?.[season] ? `<div class="seasonline">${esc(SEASONS[season].label)}: ${esc(sc.season[season])}</div>` : '';
+  const fact = sc.fact ? `<div class="fact"><span class="who">${ICONS.ranger}</span><div><b>Ranger Ridge says</b>${esc(sc.fact)}${sc.extraFact ? `<br>${esc(sc.extraFact)}` : ''}</div></div>` : '';
+  let actions = '';
+  if (sc.seasonPicker) {
+    actions = `<div class="season-pick">${Object.entries(SEASONS).map(([k, s]) => `<button class="choice${k === season ? '' : ' alt2'}" data-season="${k}">${esc(s.label)}</button>`).join('')}</div>`;
+  } else if (sc.ending) {
+    const e = earned(), miles = Math.max(...adv.path.map(sid => sceneInfo(sid).mp));
+    actions = `<div class="ending-stats">
+        <div><b>${visited.length}</b>stops</div><div><b>${Math.round(miles)}</b>miles driven</div>
+        <div><b>${e.size}/${Object.keys(BADGES).length}</b>badges</div><div><b>${found.length}/${ENDINGS.length}</b>endings found</div></div>
+      ${e.size ? `<div class="ending-badges">${[...e].map(k => `<span>${ICONS[BADGES[k].icon]}${esc(BADGES[k].name)}</span>`).join('')}</div>` : ''}
+      <div class="choices">
+        <button class="choice" data-act="restart">${found.length < ENDINGS.length ? 'Play again and find a new ending' : 'Play again'} <span class="arrow">↻</span></button>
+        ${todos.length ? `<button class="choice alt2" data-act="plan">Plan a real trip like this one <span class="arrow">↓</span></button>` : ''}
+        <button class="choice alt2" data-act="guide">Open the explorer’s field guide <span class="arrow">↓</span></button>
+      </div>`;
+  } else {
+    const ch = typeof sc.choices === 'function' ? sc.choices(x) : sc.choices || [];
+    actions = `<div class="choices">${ch.map((c, i) => `<button class="choice${i ? ' alt2' : ''}" data-to="${c.to}">${esc(c.label)} <span class="arrow">→</span></button>`).join('')}</div>`;
+  }
+  const extras = [
+    ...(sc.extras || []).map(e => `<button data-scroll="${e.go}">${esc(e.label)}</button>`),
+    info.p?.url ? `<a href="${esc(info.p.url)}" target="_blank" rel="noopener">Learn about ${esc(info.p.title)} on NPS.gov</a>` : '',
+    adv.path.length > 1 ? `<button data-act="back">← Go back a step</button>` : '',
+  ].filter(Boolean).join('');
+  const el = $('scene');
+  el.innerHTML = `<div class="photo" ${info.img ? `style="background-image:url('${esc(info.img)}')"` : ''} role="img" aria-label="${esc(info.title)}">
+      <span class="mile">${esc(info.mileLabel)}</span>${id !== 'start' ? `<span class="step">Stop ${adv.path.length - 1}</span>` : ''}</div>
+    <div class="body"><h2 tabindex="-1">${esc(info.title)}</h2>${sLine}<div class="story">${paras}</div>${fact}${actions}${extras ? `<div class="extras">${extras}</div>` : ''}</div>`;
+  if (animate) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
+  el.querySelectorAll('[data-to]').forEach(b => b.onclick = () => go(b.dataset.to));
+  el.querySelectorAll('[data-season]').forEach(b => b.onclick = () => { setSeason(b.dataset.season); go('entrance'); });
+  el.querySelectorAll('[data-scroll]').forEach(b => b.onclick = () => $(b.dataset.scroll).scrollIntoView({ behavior: 'smooth' }));
+  el.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
+    const a = b.dataset.act;
+    if (a === 'back') { adv.path.pop(); save(); renderAll(true); }
+    else if (a === 'restart') { adv.path = ['start']; save(); renderAll(true); }
+    else if (a === 'guide') $('about').scrollIntoView({ behavior: 'smooth' });
+    else if (a === 'plan') prefillPlanner();
+  });
+  $('triplog').innerHTML = visited.map(v => `<li><i ${v.img ? `style="background-image:url('${esc(v.img)}')"` : ''}></i><div><b>${esc(v.mileLabel)}</b>${esc(v.title)}</div></li>`).join('');
+  $('triplog-wrap').style.display = visited.length ? '' : 'none';
+  $('triplog').scrollLeft = 1e6;
+  document.querySelector('#adv-progress .lbl').textContent = `${info.mileLabel} of 105 · ${info.title}`;
+  drawVisited(visited);
+  driveTo(info.mp);
+  drawRoute(visited);
+}
+function renderAll(animate, pop) { renderBadges(pop); renderScene(animate); }
+function go(to) {
+  const before = earned();
+  adv.path.push(to);
+  const sc = SCENES[to];
+  if (sc.ending && !found.includes(to)) found.push(to);
+  save();
+  const newBadge = [...earned()].find(b => !before.has(b));
+  renderAll(true, newBadge);
+  if (newBadge) toast(newBadge);
+  const top = $('scene').getBoundingClientRect().top;
+  if (top < 70 || top > innerHeight * .6) scrollTo({ top: top + scrollY - 80, behavior: 'smooth' });
+  setTimeout(() => $('scene').querySelector('h2')?.focus({ preventScroll: true }), 50);
+}
+function prefillPlanner() {
+  const want = { summit: /hik/i, falls: /hik|waterfall/i, wild: /wildlife/i, camp: /camp/i, road: /driv/i, ranger: /junior|ranger/i };
+  pl.interests.clear();
+  earned().forEach(b => { const re = want[b]; if (re) topActs.filter(a => re.test(a)).slice(0, 1).forEach(a => pl.interests.add(a)); });
+  if (adv.path.includes('end_stars')) topActs.filter(a => /astronom|star/i.test(a)).slice(0, 1).forEach(a => pl.interests.add(a));
+  pl.time = adv.path.includes('camp') ? 16 : 8;
+  interestButtons(); segButtons('pl-time', TIMES, () => pl.time, v => pl.time = v); plan();
+  $('planner').scrollIntoView({ behavior: 'smooth' });
+}
+if (isShen) {
+  renderAll(false);
+  requestAnimationFrame(() => { buildAdvRoad(); renderScene(false); });
+  let advRz; window.addEventListener('resize', () => { clearTimeout(advRz); advRz = setTimeout(() => { buildAdvRoad(); renderScene(false); }, 150); });
+  window.addEventListener('seasonchange', () => renderScene(false));
+  window.addEventListener('forecast', () => { const id = adv.path[adv.path.length - 1]; if (id === 'start' || id === 'meadows') renderScene(false); });
+} else $('adventure').style.display = 'none';
+
+/* ======================= STARTUP ======================= */
+setSeason(season);
+window.addEventListener('seasonchange', () => { renderTodos(); if (todos.length) plan(); });
+renderTodos();
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* data for the 3D view */
+window.PARK3D = {
+  isShen,
+  pins: [
+    ...vcs.map(v => ({ c: coords(v), name: v.name, color: '#6fa8dc' })),
+    ...camps.map(c => ({ c: coords(c), name: c.name, color: '#6fcf8a' })),
+    ...osmPts.filter(p => p.kind === 'peak' && p.name).sort((a, b) => (parseFloat(b.ele) || 0) - (parseFloat(a.ele) || 0)).slice(0, 10).map(p => ({ c: [p.lat, p.lon], name: p.name + (p.ele ? ` (${Math.round(parseFloat(p.ele) * 3.281).toLocaleString()} ft)` : ''), color: '#f2c14e' })),
+  ].filter(p => p.c),
+  center: coords(P),
+  get season() { return season; },
+};
+</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+/* ======================= 3D TERRAIN ======================= */
+const box = document.getElementById('terrain-box');
+const msg = document.getElementById('terrain-msg');
+const label = document.getElementById('terrain-label');
+const K = window.PARK3D || { pins: [] };
+
+// Area to model: Shenandoah's full length, or a box around any other park.
+const c0 = K.center || [38.5, -78.45];
+const [S, N, W, E] = K.isShen ? [37.98, 38.95, -78.98, -78.10] : [c0[0] - .35, c0[0] + .35, c0[1] - .45, c0[1] + .45];
+
+const PALETTES = {
+  spring: ['#35523a', '#5e9150', '#a6cc7c', '#f0b3cf'],
+  summer: ['#1c3a25', '#2c6a39', '#5c9a44', '#b4cf72'],
+  fall:   ['#4a3a22', '#a8451b', '#dd8a2e', '#f3cc55'],
+  winter: ['#4a5966', '#7e8f9b', '#c5ced5', '#ffffff'],
+};
+const EXAG = 3;
+
+const lon2x = (lon, z) => (lon + 180) / 360 * 2 ** z;
+const lat2y = (lat, z) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
+
+let started = false;
+new IntersectionObserver((es, o) => { if (es[0].isIntersecting && !started) { started = true; o.disconnect(); start().catch(err => { console.error(err); msg.textContent = 'Couldn’t load the 3D view. It needs an internet connection.'; }); } }, { rootMargin: '400px' }).observe(box);
+
+async function start() {
+  const THREE = await import('three');
+  const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
+
+  // choose a zoom level that needs at most ~24 tiles
+  let z = 11;
+  while (z > 6 && (Math.floor(lon2x(E, z)) - Math.floor(lon2x(W, z)) + 1) * (Math.floor(lat2y(S, z)) - Math.floor(lat2y(N, z)) + 1) > 24) z--;
+  const tx0 = Math.floor(lon2x(W, z)), tx1 = Math.floor(lon2x(E, z)), ty0 = Math.floor(lat2y(N, z)), ty1 = Math.floor(lat2y(S, z));
+  const cw = (tx1 - tx0 + 1) * 256, ch = (ty1 - ty0 + 1) * 256;
+  const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  const load = (x, y) => new Promise((res, rej) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = rej; im.src = `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`; });
+  const jobs = [];
+  for (let x = tx0; x <= tx1; x++) for (let y = ty0; y <= ty1; y++) jobs.push(load(x, y).then(im => ctx.drawImage(im, (x - tx0) * 256, (y - ty0) * 256)));
+  await Promise.all(jobs);
+  const px = ctx.getImageData(0, 0, cw, ch).data;
+
+  // crop window in canvas pixels
+  const cx0 = (lon2x(W, z) - tx0) * 256, cx1 = (lon2x(E, z) - tx0) * 256, cy0 = (lat2y(N, z) - ty0) * 256, cy1 = (lat2y(S, z) - ty0) * 256;
+  const elevAt = (u, v) => { // u,v in 0..1 within crop
+    const x = Math.min(cw - 1, Math.max(0, Math.round(cx0 + u * (cx1 - cx0)))), y = Math.min(ch - 1, Math.max(0, Math.round(cy0 + v * (cy1 - cy0))));
+    const i = (y * cw + x) * 4; return px[i] * 256 + px[i + 1] + px[i + 2] / 256 - 32768;
+  };
+
+  const latMid = (N + S) / 2;
+  const wKm = (E - W) * 111.32 * Math.cos(latMid * Math.PI / 180), hKm = (N - S) * 110.57;
+  const scale = 100 / Math.max(wKm, hKm), W3 = wKm * scale, H3 = hKm * scale;
+  const cols = Math.min(420, Math.round(cx1 - cx0)), rows = Math.round(cols * H3 / W3);
+  const geo = new THREE.PlaneGeometry(W3, H3, cols - 1, rows - 1); geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position, elev = new Float32Array(pos.count);
+  let lo = Infinity, hi = -Infinity;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const i = r * cols + c, e = Math.max(0, elevAt(c / (cols - 1), r / (rows - 1)));
+    elev[i] = e; lo = Math.min(lo, e); hi = Math.max(hi, e);
+    pos.setY(i, e / 1000 * scale * EXAG);
+  }
+  geo.computeVertexNormals();
+  const colors = new Float32Array(pos.count * 3); geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const tmp = new THREE.Color(), a = new THREE.Color(), b = new THREE.Color();
+  function paint(season) {
+    const pal = (PALETTES[season] || PALETTES.fall).map(h => new THREE.Color(h));
+    for (let i = 0; i < pos.count; i++) {
+      const t = Math.pow((elev[i] - lo) / (hi - lo || 1), 0.8) * (pal.length - 1), k = Math.min(pal.length - 2, Math.floor(t));
+      tmp.copy(a.copy(pal[k])).lerp(b.copy(pal[k + 1]), t - k);
+      colors[i * 3] = tmp.r; colors[i * 3 + 1] = tmp.g; colors[i * 3 + 2] = tmp.b;
+    }
+    geo.attributes.color.needsUpdate = true;
+  }
+  paint(K.season);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+  box.prepend(renderer.domElement);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 1000);
+  camera.position.set(-W3 * 0.55, 42, H3 * 0.62);
+  scene.add(new THREE.HemisphereLight(0xfff4e0, 0x223322, 1.1));
+  const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(-60, 80, -30); scene.add(sun);
+  scene.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 })));
+
+  // pins
+  const pinMeshes = [];
+  const toXZ = (lat, lon) => [((lon - W) / (E - W) - .5) * W3, ((N - lat) / (N - S) - .5) * H3];
+  for (const p of K.pins) {
+    const [la, lo2] = p.c; if (la < S || la > N || lo2 < W || lo2 > E) continue;
+    const [x, zz] = toXZ(la, lo2), e = Math.max(0, elevAt((lo2 - W) / (E - W), (N - la) / (N - S)));
+    const y = e / 1000 * scale * EXAG;
+    const stick = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, 3), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    stick.position.set(x, y + 1.5, zz); scene.add(stick);
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(.7, 20, 14), new THREE.MeshBasicMaterial({ color: p.color }));
+    ball.position.set(x, y + 3.2, zz); ball.userData.name = p.name; scene.add(ball); pinMeshes.push(ball);
+  }
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.maxPolarAngle = 1.42; controls.minDistance = 12; controls.maxDistance = 190;
+  controls.autoRotate = true; controls.autoRotateSpeed = 0.5;
+  controls.addEventListener('start', () => controls.autoRotate = false);
+
+  const size = () => { const w = box.clientWidth, h = box.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
+  size(); new ResizeObserver(size).observe(box);
+
+  const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+  renderer.domElement.addEventListener('pointermove', (ev) => {
+    const r = renderer.domElement.getBoundingClientRect();
+    mouse.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(mouse, camera);
+    const hit = ray.intersectObjects(pinMeshes)[0];
+    if (hit) { label.style.display = 'block'; label.textContent = hit.object.userData.name; label.style.left = (ev.clientX - r.left) + 'px'; label.style.top = (ev.clientY - r.top) + 'px'; }
+    else label.style.display = 'none';
+  });
+  window.addEventListener('seasonchange', (e) => paint(e.detail));
+
+  let visible = true;
+  new IntersectionObserver(es => visible = es[0].isIntersecting).observe(box);
+  msg.remove();
+  renderer.setAnimationLoop(() => { if (!visible) return; controls.update(); renderer.render(scene, camera); });
+}
+</script>
+
+</body>
+</html>

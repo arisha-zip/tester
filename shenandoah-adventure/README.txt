@@ -1,5 +1,24 @@
-SHENANDOAH SITE v2 (built with nps_mcp)
-=======================================
+SHENANDOAH JUNIOR EXPLORER ADVENTURE (built with nps_mcp)
+=========================================================
+
+NEW: The site now opens with a kid-friendly choose-your-own-adventure down
+Skyline Drive: 16 scenes, 4 endings, 7 badges, a road that fills in with
+photos of every stop you visit, and a trip log. Real park photos, mile
+markers, weather and alerts from your MCP data show up inside the story.
+Everything from before (map, 3D, planner, etc.) is below it as the
+"Explorer's field guide".
+
+QUICK UPDATE: only site-template.html changed. Drop it into the nps_mcp
+folder you've been using (replace the old one), then run:
+    node build-site.mjs
+    open ../shenandoah.html
+
+To edit the story: open site-template.html in VS Code and search for
+"const SCENES". Each scene has a title, text, a Ranger Ridge fact and
+choices that point to other scenes.
+
+--- Details from v2 below ---
+
 
 What's new
   - Live alerts banner, live weather forecast, park webcams
